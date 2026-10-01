@@ -1,0 +1,28 @@
+{
+  "name": "obsidian-file-externalizer",
+  "version": "0.1.0",
+  "description": "Obsidian plugin for registering, opening, and validating files stored outside the vault.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && node scripts/build-tests.mjs && node --test .tmp-tests/*.cjs",
+    "install:vault": "node scripts/install-to-vault.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "external-files",
+    "file-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.0",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.6.3"
+  }
+}

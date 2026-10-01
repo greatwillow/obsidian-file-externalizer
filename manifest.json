@@ -1,0 +1,9 @@
+{
+  "id": "file-externalizer",
+  "name": "File Externalizer",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Register, open, cache, and validate files stored outside an Obsidian vault.",
+  "author": "",
+  "isDesktopOnly": true
+}

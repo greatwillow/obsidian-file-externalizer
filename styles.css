@@ -1,0 +1,112 @@
+.file-externalizer-modal-frame {
+  width: min(860px, 94vw);
+}
+
+.file-externalizer-modal .setting-item-description {
+  max-width: 42rem;
+}
+
+.file-externalizer-hidden {
+  display: none;
+}
+
+.file-externalizer-help {
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0.25rem 0 1rem;
+}
+
+.file-externalizer-path,
+.file-externalizer-current-path {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.35;
+  margin: 0.25rem 0 1rem;
+  overflow-wrap: anywhere;
+}
+
+.file-externalizer-current-path {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  color: var(--text-normal);
+  padding: 0.55rem 0.7rem;
+}
+
+.file-externalizer-error {
+  border-left: 3px solid var(--text-error);
+  color: var(--text-error);
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.file-externalizer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.file-externalizer-folder-tree {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin: 0.75rem 0 1rem;
+  max-height: 26rem;
+  overflow: auto;
+  padding: 0.2rem 0;
+}
+
+.file-externalizer-tree-row {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+  gap: 0.15rem;
+  min-height: 1.9rem;
+  padding-left: calc(0.35rem + (var(--depth) * 1.15rem));
+  padding-right: 0.5rem;
+}
+
+.file-externalizer-tree-row:hover,
+.file-externalizer-tree-row.is-selected {
+  background: var(--background-modifier-hover);
+}
+
+.file-externalizer-tree-row.is-selected .file-externalizer-tree-name {
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.file-externalizer-tree-toggle,
+.file-externalizer-tree-name {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: inherit;
+  height: auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.2rem;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-externalizer-tree-name {
+  display: block;
+}
+
+.file-externalizer-tree-status,
+.file-externalizer-tree-muted {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.file-externalizer-tree-muted {
+  padding: 0.25rem 0.5rem;
+  padding-left: calc(2rem + (var(--depth) * 1.15rem));
+}
+
+.file-externalizer-confirm-input {
+  box-sizing: border-box;
+  width: 100%;
+}
