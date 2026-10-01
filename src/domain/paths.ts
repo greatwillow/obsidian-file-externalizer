@@ -37,8 +37,15 @@ export function descendantOrSame(candidate: string, base: string): boolean {
   return candidate === base || String(candidate || '').startsWith(`${base}/`);
 }
 
+/**
+ * Replaces whole-path occurrences of `oldPath` (and paths beneath it) in `text`.
+ * A sibling that only shares a prefix, like `Legal Ops` when renaming `Legal`, is left alone.
+ */
 export function replacePathPrefix(text: string, oldPath: string, newPath: string): string {
-  return String(text || '').split(oldPath).join(newPath);
+  if (!oldPath) return String(text || '');
+  // Spaces are valid inside folder names, so a following space is not treated as a path boundary.
+  const pattern = new RegExp(`${escapeRegExp(oldPath)}(?=$|[/"'\`)\\]|>,;\\t\\r\\n])`, 'gm');
+  return String(text || '').replace(pattern, () => newPath);
 }
 
 export function relativeRemotePath(remotePath: string, remoteRoot: string): string {
