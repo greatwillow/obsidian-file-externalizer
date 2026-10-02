@@ -4,6 +4,7 @@
   "version": "0.2.0",
   "minAppVersion": "1.5.0",
   "description": "Register, open, cache, and validate files stored outside an Obsidian vault.",
-  "author": "",
+  "author": "Gregory Denys",
+  "authorUrl": "https://github.com/greatwillow",
   "isDesktopOnly": true
 }

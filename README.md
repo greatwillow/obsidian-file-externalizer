@@ -72,3 +72,7 @@ The plugin ships with generic defaults. Each vault configures its own storage ro
 - `File Externalizer: Open External File`
 - `File Externalizer: Validate External File Notes`
 - `File Externalizer: Check Setup`
+
+## License
+
+[MIT](LICENSE)

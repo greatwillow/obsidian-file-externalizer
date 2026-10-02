@@ -18,7 +18,7 @@
     "external-files",
     "file-management"
   ],
-  "author": "",
+  "author": "Gregory Denys",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.7.5",

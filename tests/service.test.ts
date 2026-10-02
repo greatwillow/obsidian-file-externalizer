@@ -77,33 +77,33 @@ test('registerFile reports a missing local file before uploading anything', asyn
 test('registerFile uploads, seeds the cache, and writes a note in the document-type folder', async () => {
   const { vault, provider, service } = setup();
   try {
-    const local = writeLocal(vault, 'Mutual_NDA.pdf', 'nda-bytes');
+    const local = writeLocal(vault, 'Example_Agreement.pdf', 'agreement-bytes');
     const result = await service.registerFile({
       destinationFolder: `${root}/Projects/Legal/Reference`,
       documentType: 'reference',
       filePath: local,
       shareLink: false,
-      title: 'NDA: Quebec',
-      uploadFilename: 'NDA',
+      title: 'Agreement: Draft',
+      uploadFilename: 'Agreement',
     });
 
-    assert.equal(result.remotePath, `${root}/Projects/Legal/Reference/NDA.pdf`);
-    assert.equal(result.link, '[[NDA- Quebec]]');
-    assert.equal(provider.files.get(result.remotePath)?.content, 'nda-bytes');
+    assert.equal(result.remotePath, `${root}/Projects/Legal/Reference/Agreement.pdf`);
+    assert.equal(result.link, '[[Agreement- Draft]]');
+    assert.equal(provider.files.get(result.remotePath)?.content, 'agreement-bytes');
     assert.ok(vault.folders.has('External Files/Reference'));
 
-    const fm = parseFrontmatter(vault.text('External Files/Reference/NDA- Quebec.md'));
+    const fm = parseFrontmatter(vault.text('External Files/Reference/Agreement- Draft.md'));
     assert.equal(fm.type, 'external-file');
     assert.equal(fm.remote_path, result.remotePath);
     assert.equal(fm.document_type, 'reference');
     assert.equal(fm.context_type, 'Projects');
     assert.equal(fm.context_name, 'Legal');
     assert.equal(fm.share_link, 'none');
-    assert.equal(fm.original_filename, 'Mutual_NDA.pdf');
-    assert.equal(fm.file_size_bytes, String('nda-bytes'.length));
+    assert.equal(fm.original_filename, 'Example_Agreement.pdf');
+    assert.equal(fm.file_size_bytes, String('agreement-bytes'.length));
 
-    const cached = path.join(vault.basePath, 'Cache/Projects/Legal/Reference/NDA.pdf');
-    assert.equal(fs.readFileSync(cached, 'utf8'), 'nda-bytes');
+    const cached = path.join(vault.basePath, 'Cache/Projects/Legal/Reference/Agreement.pdf');
+    assert.equal(fs.readFileSync(cached, 'utf8'), 'agreement-bytes');
   } finally {
     vault.cleanup();
   }
