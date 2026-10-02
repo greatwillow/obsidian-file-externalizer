@@ -110,3 +110,22 @@
   box-sizing: border-box;
   width: 100%;
 }
+
+.file-externalizer-setup-status {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  margin: 0.5rem 0;
+  overflow-wrap: anywhere;
+  padding: 0.5rem 0.75rem;
+}
+
+.file-externalizer-setup-check.is-ok span {
+  color: var(--color-green);
+}
+
+.file-externalizer-setup-check.is-failed span {
+  color: var(--color-red);
+}

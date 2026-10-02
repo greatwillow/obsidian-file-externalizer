@@ -8,10 +8,10 @@ import { normalizeDocumentType } from '../domain/documentType';
 import { buildExternalFileNote, externalFileNoteFolder, markExternalFileTextMissing, updateExternalFileTextForFolderRename } from '../domain/externalFileNote';
 import { defaultTitleForFile, normalizeUploadFilename, slugTitle } from '../domain/filename';
 import { parseFrontmatter } from '../domain/frontmatter';
-import { deriveContextName, deriveContextType, joinRemotePath, parentRemotePath } from '../domain/paths';
+import { deriveContextName, deriveContextType, joinRemotePath, parentRemotePath, replacePathPrefix } from '../domain/paths';
 import { getVaultPath, uniqueMarkdownPath, vaultRelativePath } from '../platform/obsidianVault';
 import { isMissingRemotePathError, ProtonDriveCliProvider } from '../providers/protonDriveCliProvider';
-import { StorageProvider } from '../providers/storageProvider';
+import { LoginResult, SetupStatus, StorageProvider } from '../providers/storageProvider';
 import { CacheService } from './cacheService';
 
 export interface RegisterFileInput {
@@ -45,7 +45,19 @@ export class FileExternalizerService {
     private readonly settings: FileExternalizerSettings = DEFAULT_SETTINGS,
     provider?: StorageProvider,
   ) {
-    this.provider = provider || new ProtonDriveCliProvider();
+    this.provider = provider || new ProtonDriveCliProvider({ cliPath: settings.protonCliPath });
+  }
+
+  async checkSetup(): Promise<SetupStatus> {
+    if (!this.provider.checkSetup) {
+      return { ready: true, checks: [{ label: 'Storage provider', ok: true, detail: 'No setup checks for this provider.' }] };
+    }
+    return this.provider.checkSetup(this.settings.remoteRoot);
+  }
+
+  async login(onUrl?: (url: string) => void): Promise<LoginResult> {
+    if (!this.provider.login) throw new Error('This storage provider has no sign-in step.');
+    return this.provider.login(onUrl);
   }
 
   async registerFile(input: RegisterFileInput): Promise<RegisterFileResult> {
@@ -154,7 +166,7 @@ export class FileExternalizerService {
       const fm = parseFrontmatter(text);
       const updated = fm.type === 'external-file'
         ? updateExternalFileTextForFolderRename(text, oldPath, newPath, today, this.settings.remoteRoot, this.settings.contextTypes)
-        : text.split(oldPath).join(newPath);
+        : replacePathPrefix(text, oldPath, newPath);
       if (updated !== text) {
         await this.app.vault.modify(file, updated);
         changed += 1;

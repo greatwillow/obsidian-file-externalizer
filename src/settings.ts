@@ -5,6 +5,7 @@ export interface FileExternalizerSettings {
   contextTypes: string[];
   documentTypes: string[];
   externalNotesFolder: string;
+  protonCliPath: string;
   provider: 'proton-drive-cli';
   remoteRoot: string;
 }
@@ -14,6 +15,7 @@ export const DEFAULT_SETTINGS: FileExternalizerSettings = {
   contextTypes: [...DEFAULT_CONTEXT_TYPES],
   documentTypes: [...DEFAULT_DOCUMENT_TYPES],
   externalNotesFolder: 'External Files',
+  protonCliPath: '',
   provider: 'proton-drive-cli',
   remoteRoot: '',
 };
@@ -24,6 +26,7 @@ export function normalizeSettings(input: Partial<FileExternalizerSettings> | nul
     contextTypes: nonEmptyList(input?.contextTypes, DEFAULT_SETTINGS.contextTypes),
     documentTypes: ensureOther(nonEmptyList(input?.documentTypes, DEFAULT_SETTINGS.documentTypes)),
     externalNotesFolder: nonEmpty(input?.externalNotesFolder, DEFAULT_SETTINGS.externalNotesFolder),
+    protonCliPath: String(input?.protonCliPath || '').trim(),
     provider: input?.provider || DEFAULT_SETTINGS.provider,
     remoteRoot: String(input?.remoteRoot || DEFAULT_SETTINGS.remoteRoot).trim().replace(/\/+$/g, ''),
   };

@@ -1,12 +1,25 @@
-import { execFile as execFileCallback, spawnSync } from 'node:child_process';
+import { execFile as execFileCallback, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { joinRemotePath } from '../domain/paths';
-import { StorageProvider, StoredFile, UploadFileInput } from './storageProvider';
+import { LoginResult, SetupCheck, SetupStatus, StorageProvider, StoredFile, UploadFileInput } from './storageProvider';
 
 const execFile = promisify(execFileCallback);
+
+export const PROTON_CLI_INSTALL_URL = 'https://proton.me/support/drive-cli';
+const PROTON_DEFAULT_ROOT = '/my-files';
+const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
+
+export type CliProbe = (candidate: string) => boolean;
+
+export interface ProtonDriveCliProviderOptions {
+  /** Explicit CLI path from plugin settings. Empty means auto-detect. */
+  cliPath?: string;
+  /** Overrides how candidate CLI paths are tested. Used by tests. */
+  probe?: CliProbe;
+}
 
 interface ProtonItem {
   activeRevision?: {
@@ -23,10 +36,86 @@ interface ProtonItem {
 }
 
 export class ProtonDriveCliProvider implements StorageProvider {
-  private readonly cliPath: string;
+  private resolvedCliPath: string | null = null;
 
-  constructor(cliPath = findProtonDriveCli()) {
-    this.cliPath = cliPath;
+  constructor(private readonly options: ProtonDriveCliProviderOptions = {}) {}
+
+  /** Resolves the CLI lazily so the plugin still loads when Proton is not installed yet. */
+  cliPath(): string {
+    if (!this.resolvedCliPath) this.resolvedCliPath = findProtonDriveCli(this.options.cliPath, this.options.probe);
+    return this.resolvedCliPath;
+  }
+
+  async checkSetup(remoteRoot: string): Promise<SetupStatus> {
+    const checks: SetupCheck[] = [];
+    let cliPath: string;
+    try {
+      cliPath = this.cliPath();
+      checks.push({ label: 'Proton Drive CLI', ok: true, detail: cliPath });
+    } catch {
+      checks.push({
+        label: 'Proton Drive CLI',
+        ok: false,
+        detail: `Not found. Install it from ${PROTON_CLI_INSTALL_URL}, or set the CLI path in settings.`,
+      });
+      return { ready: false, checks };
+    }
+
+    const root = remoteRoot.replace(/\/+$/g, '');
+    try {
+      await this.run(['filesystem', 'list', root || PROTON_DEFAULT_ROOT, '--json']);
+      checks.push({ label: 'Signed in', ok: true, detail: 'Proton Drive responded.' });
+      checks.push(root
+        ? { label: 'Remote root', ok: true, detail: root }
+        : { label: 'Remote root', ok: false, detail: 'Not configured. Set the remote root in settings.' });
+    } catch (error) {
+      if (isMissingRemotePathError(error) && root) {
+        checks.push({ label: 'Signed in', ok: true, detail: 'Proton Drive responded.' });
+        checks.push({ label: 'Remote root', ok: false, detail: `${root} was not found, or this account cannot see it.` });
+      } else if (isAuthError(error)) {
+        checks.push({ label: 'Signed in', ok: false, detail: 'Not signed in. Use "Log in to Proton".' });
+      } else {
+        checks.push({ label: 'Signed in', ok: false, detail: firstLine(error) || `${cliPath} could not reach Proton Drive.` });
+      }
+    }
+
+    return { ready: checks.every((check) => check.ok), checks };
+  }
+
+  /**
+   * Runs `proton-drive auth login`, which completes in the browser, and waits for it to finish.
+   * `onUrl` receives the first sign-in link the CLI prints, in case the browser did not open on its own.
+   */
+  login(onUrl?: (url: string) => void): Promise<LoginResult> {
+    const cliPath = this.cliPath();
+    return new Promise((resolve, reject) => {
+      const child = spawn(cliPath, ['auth', 'login'], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let output = '';
+      let urlReported = false;
+      const collect = (chunk: Buffer) => {
+        output += chunk.toString('utf8');
+        const url = urlReported ? null : findUrl(output);
+        if (url && onUrl) {
+          urlReported = true;
+          onUrl(url);
+        }
+      };
+      child.stdout?.on('data', collect);
+      child.stderr?.on('data', collect);
+      const timer = setTimeout(() => {
+        child.kill();
+        reject(new Error('Proton login timed out. Try again, or run `proton-drive auth login` in a terminal.'));
+      }, LOGIN_TIMEOUT_MS);
+      child.on('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        if (code === 0) resolve({ output, url: findUrl(output) });
+        else reject(new Error(`Proton login failed (exit ${code}).${output.trim() ? `\n${output.trim()}` : ''}`));
+      });
+    });
   }
 
   async createFolder(parentPath: string, name: string): Promise<void> {
@@ -85,34 +174,62 @@ export class ProtonDriveCliProvider implements StorageProvider {
 
   private async run(args: string[]): Promise<string> {
     try {
-      const result = await execFile(this.cliPath, args, { encoding: 'utf8' });
+      const result = await execFile(this.cliPath(), args, { encoding: 'utf8' });
       return result.stdout || '';
     } catch (error) {
-      throw decorateCliError(this.cliPath, args, error);
+      throw decorateCliError(this.cliPath(), args, error);
     }
   }
 }
 
-export function findProtonDriveCli(): string {
+export function protonDriveCliCandidates(configuredPath = '', env: NodeJS.ProcessEnv = process.env, home = os.homedir()): string[] {
   const candidates = [
-    process.env.PROTON_DRIVE_CLI,
+    configuredPath.trim(),
+    env.PROTON_DRIVE_CLI,
     'proton-drive',
-    path.join(os.homedir(), '.local/bin/proton-drive'),
+    path.join(home, '.local/bin/proton-drive'),
     '/opt/homebrew/bin/proton-drive',
     '/usr/local/bin/proton-drive',
   ].filter(Boolean) as string[];
+  return Array.from(new Set(candidates));
+}
 
-  for (const candidate of candidates) {
-    const probe = spawnSync(candidate, ['--help'], { encoding: 'utf8' });
-    if (probe.status === 0) return candidate;
+export function findProtonDriveCli(configuredPath = '', probe: CliProbe = probeCli): string {
+  for (const candidate of protonDriveCliCandidates(configuredPath)) {
+    if (probe(candidate)) return candidate;
   }
 
-  throw new Error('Could not find proton-drive CLI. Install it or set PROTON_DRIVE_CLI.');
+  throw new Error('Could not find proton-drive CLI. Install it or set the CLI path in File Externalizer settings.');
+}
+
+function probeCli(candidate: string): boolean {
+  return spawnSync(candidate, ['--help'], { encoding: 'utf8' }).status === 0;
+}
+
+export function isAuthError(error: unknown): boolean {
+  // Look at the CLI's own output first: the wrapped message also echoes the command and its paths.
+  const err = error as { message?: string; stderr?: string; stdout?: string };
+  const output = `${err?.stderr || ''}\n${err?.stdout || ''}`.trim() || err?.message || '';
+  return /not (logged|signed) in|log ?in|sign ?in|unauthori[sz]ed|unauthenticated|authenticat|\b401\b|session (has )?expired/i.test(output);
+}
+
+function errorText(error: unknown): string {
+  const err = error as { message?: string; stderr?: string; stdout?: string };
+  return `${err?.message || ''}\n${err?.stderr || ''}\n${err?.stdout || ''}`.toLowerCase();
+}
+
+function firstLine(error: unknown): string {
+  const err = error as { message?: string; stderr?: string };
+  return String(err?.stderr || err?.message || '').trim().split(/\r?\n/)[0] || '';
+}
+
+function findUrl(text: string): string | null {
+  const match = text.match(/https:\/\/\S+/);
+  return match ? match[0] : null;
 }
 
 export function isMissingRemotePathError(error: unknown): boolean {
-  const err = error as { message?: string; stderr?: string; stdout?: string };
-  const message = `${err?.message || ''}\n${err?.stderr || ''}\n${err?.stdout || ''}`.toLowerCase();
+  const message = errorText(error);
   return message.includes('not found') ||
     message.includes('does not exist') ||
     message.includes('no such file') ||

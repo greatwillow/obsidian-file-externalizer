@@ -7,7 +7,7 @@ export interface FrontmatterUpdate {
 }
 
 export function parseFrontmatter(text: string): Frontmatter {
-  const match = String(text || '').match(/^---\n([\s\S]*?)\n---/);
+  const match = String(text || '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
   const out: Frontmatter = {};
   if (!match) return out;
   for (const line of match[1].split(/\r?\n/)) {
@@ -31,7 +31,7 @@ export function yamlScalar(value: string): string {
 
 export function setFrontmatterFields(text: string, updates: Record<string, FrontmatterUpdate>): string {
   const source = String(text || '');
-  const match = source.match(/^---\n([\s\S]*?)\n---/);
+  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return source;
 
   const remaining = { ...updates };
@@ -49,7 +49,8 @@ export function setFrontmatterFields(text: string, updates: Record<string, Front
     lines.push(`${key}: ${frontmatterValue(update)}`);
   }
 
-  return source.replace(/^---\n[\s\S]*?\n---/, `---\n${lines.join('\n')}\n---`);
+  const eol = source.includes('\r\n') ? '\r\n' : '\n';
+  return source.replace(/^---\r?\n[\s\S]*?\r?\n---/, `---${eol}${lines.join(eol)}${eol}---`);
 }
 
 function frontmatterValue(update: FrontmatterUpdate): string {

@@ -11,7 +11,7 @@ export default class FileExternalizerPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
-    this.service = new FileExternalizerService(this.app, this.settings);
+    this.rebuildService();
     this.addSettingTab(new FileExternalizerSettingTab(this.app, this));
 
     this.addCommand({
@@ -30,6 +30,12 @@ export default class FileExternalizerPlugin extends Plugin {
     });
 
     this.addCommand({
+      id: 'check-setup',
+      name: 'Check Setup',
+      callback: () => { void this.checkSetupCommand(); },
+    });
+
+    this.addCommand({
       id: 'validate-external-file-notes',
       name: 'Validate External File Notes',
       callback: () => { void this.validateExternalFileNotesCommand(); },
@@ -42,6 +48,27 @@ export default class FileExternalizerPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    this.rebuildService();
+  }
+
+  getService(): FileExternalizerService | null {
+    return this.service;
+  }
+
+  /** Settings changes (remote root, CLI path, ...) take effect without restarting Obsidian. */
+  private rebuildService(): void {
+    this.service = new FileExternalizerService(this.app, this.settings);
+  }
+
+  private async checkSetupCommand(): Promise<void> {
+    if (!this.service) return;
+    const status = await this.service.checkSetup();
+    if (status.ready) {
+      new Notice('File Externalizer is ready.');
+      return;
+    }
+    const failed = status.checks.filter((check) => !check.ok).map((check) => `${check.label}: ${check.detail}`);
+    new Notice(`File Externalizer setup needs attention.\n${failed.join('\n')}\nOpen Settings → File Externalizer to fix it.`, 10000);
   }
 
   private async openExternalFileCommand(): Promise<void> {
