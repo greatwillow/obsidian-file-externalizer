@@ -8,7 +8,9 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "npm run typecheck && node scripts/build-tests.mjs && node --test .tmp-tests/*.cjs",
-    "install:vault": "node scripts/install-to-vault.mjs"
+    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "install:vault": "node scripts/install-to-vault.mjs",
+    "install:release": "node scripts/install-release.mjs"
   },
   "keywords": [
     "obsidian",

@@ -26,17 +26,33 @@ npm run build
 npm test
 ```
 
-Install the built plugin into a vault:
+`main.js` is a build output and is not committed. Install your local build into a vault while developing:
 
 ```bash
 npm run install:vault -- /path/to/your-vault
 ```
 
-The install script copies `main.js`, `manifest.json`, and `styles.css` to:
+## Releasing
 
-```text
-/path/to/your-vault/.obsidian/plugins/file-externalizer
+Releases follow the standard Obsidian plugin layout: each release is a git tag equal to the version (no `v` prefix) with `main.js`, `manifest.json` and `styles.css` attached.
+
+```bash
+npm version patch   # or minor / major: bumps package.json, manifest.json and versions.json, commits, and tags
+git push --follow-tags
 ```
+
+Pushing the tag runs `.github/workflows/release.yml`, which tests, builds, checks the tag matches `manifest.json`, and publishes the GitHub release. `versions.json` maps each plugin version to the minimum Obsidian version it needs.
+
+## Installing a release into a vault
+
+```bash
+npm run install:release -- /path/to/your-vault          # latest release
+npm run install:release -- /path/to/your-vault 0.2.0    # a specific version
+```
+
+This downloads the release files with the GitHub CLI (`gh auth login` first) into `.obsidian/plugins/file-externalizer/` and leaves the vault's `data.json` settings alone. Other people using the vault get the plugin through however the vault is shared (Obsidian Sync with community plugins enabled, or the vault's git repository), so only the maintainer runs this.
+
+[BRAT](https://github.com/TfTHacker/obsidian42-brat) also works: add `greatwillow/obsidian-file-externalizer`, and give BRAT a GitHub token while the repository is private. BRAT auto-updates to the newest release, so prefer `install:release` if the vault should stay on a pinned version.
 
 ## Architecture
 
