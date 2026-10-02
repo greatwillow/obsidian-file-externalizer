@@ -19,11 +19,11 @@ const documentTypes = ['Source Material', 'Outputs', 'Reference', 'Other'];
 const contextTypes = ['Projects', 'Areas', 'Organizations', 'People', 'General'];
 
 test('normalizeUploadFilename defaults to the selected local filename', () => {
-  assert.equal(normalizeUploadFilename('', '/tmp/Mutual_NDA_Quebec.pdf'), 'Mutual_NDA_Quebec.pdf');
+  assert.equal(normalizeUploadFilename('', '/tmp/Example_Agreement.pdf'), 'Example_Agreement.pdf');
 });
 
 test('normalizeUploadFilename appends the source extension when omitted', () => {
-  assert.equal(normalizeUploadFilename('T2', '/tmp/Mutual_NDA_Quebec.pdf'), 'T2.pdf');
+  assert.equal(normalizeUploadFilename('T2', '/tmp/Example_Agreement.pdf'), 'T2.pdf');
 });
 
 test('normalizeUploadFilename rejects unsafe path characters', () => {
@@ -110,7 +110,7 @@ test('buildExternalFileNote writes generic storage and new command id', () => {
     provider: 'proton-drive-cli',
     remotePath: `${root}/Projects/Legal/T1.pdf`,
     shareLink: 'none',
-    originalFilename: 'Mutual_NDA_Quebec.pdf',
+    originalFilename: 'Example_Agreement.pdf',
     uploadFilename: 'T1.pdf',
     size: 57853,
     contextType: 'Projects',
@@ -122,7 +122,7 @@ test('buildExternalFileNote writes generic storage and new command id', () => {
   assert.equal(fm.storage_provider, 'proton-drive-cli');
   assert.equal(fm.remote_path, `${root}/Projects/Legal/T1.pdf`);
   assert.equal(fm.document_type, 'reference');
-  assert.equal(fm.original_filename, 'Mutual_NDA_Quebec.pdf');
+  assert.equal(fm.original_filename, 'Example_Agreement.pdf');
   assert.equal(fm.upload_filename, 'T1.pdf');
   assert.match(note, /command: file-externalizer:open-external-file/);
 });
