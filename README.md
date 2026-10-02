@@ -43,16 +43,22 @@ git push --follow-tags
 
 Pushing the tag runs `.github/workflows/release.yml`, which tests, builds, checks the tag matches `manifest.json`, and publishes the GitHub release. `versions.json` maps each plugin version to the minimum Obsidian version it needs.
 
-## Installing a release into a vault
+## Installing and updating in Obsidian
+
+File Externalizer is not in Obsidian's community plugin directory yet, so install it with [BRAT](https://github.com/TfTHacker/obsidian42-brat), which installs and updates plugins from their GitHub releases:
+
+1. In Obsidian, go to **Settings → Community plugins → Browse**, then install and enable **BRAT**.
+2. Run **BRAT: Add a beta plugin for testing** from the command palette.
+3. Enter `https://github.com/greatwillow/obsidian-file-externalizer`, pick the latest version, and tick **Enable after installing the plugin**.
+
+BRAT checks for new releases when Obsidian starts, or when you run **BRAT: Check for updates to all beta plugins**. To stay on one version, pick that version instead of "latest" when adding it. BRAT then treats it as frozen. Updating never touches the vault's `data.json` settings.
+
+Without BRAT, you can install a release from a terminal with the GitHub CLI:
 
 ```bash
 npm run install:release -- /path/to/your-vault          # latest release
 npm run install:release -- /path/to/your-vault 0.2.0    # a specific version
 ```
-
-This downloads the release files with the GitHub CLI (`gh auth login` first) into `.obsidian/plugins/file-externalizer/` and leaves the vault's `data.json` settings alone. Other people using the vault get the plugin through however the vault is shared (Obsidian Sync with community plugins enabled, or the vault's git repository), so only the maintainer runs this.
-
-[BRAT](https://github.com/TfTHacker/obsidian42-brat) also works: add `greatwillow/obsidian-file-externalizer`, and give BRAT a GitHub token while the repository is private. BRAT auto-updates to the newest release, so prefer `install:release` if the vault should stay on a pinned version.
 
 ## Architecture
 
