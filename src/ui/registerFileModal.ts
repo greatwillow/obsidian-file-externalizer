@@ -1,7 +1,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import path from 'node:path';
 import { DocumentType } from '../constants';
-import { normalizeDocumentType } from '../domain/documentType';
+import { guessDocumentType, normalizeDocumentType } from '../domain/documentType';
 import { defaultTitleForFile, normalizeUploadFilename } from '../domain/filename';
 import { FileExternalizerService, RegisterFileInput } from '../services/fileExternalizerService';
 import { FileExternalizerSettings } from '../settings';
@@ -15,6 +15,8 @@ interface NativeFileResult {
 export class RegisterFileModal extends Modal {
   private readonly values: RegisterFileInput;
   private destinationEl: HTMLElement | null = null;
+  private documentTypeInput: { setValue(value: string): void } | null = null;
+  private documentTypeWasAuto = true;
   private errorEl: HTMLElement | null = null;
   private fileStatusEl: HTMLElement | null = null;
   private pastePathSetting: Setting | null = null;
@@ -33,7 +35,7 @@ export class RegisterFileModal extends Modal {
       filePath: '',
       title: '',
       uploadFilename: '',
-      documentType: 'Other',
+      documentType: normalizeDocumentType('Other', settings.documentTypes),
       destinationFolder: settings.remoteRoot,
       shareLink: false,
     };
@@ -126,12 +128,14 @@ export class RegisterFileModal extends Modal {
 
     new Setting(contentEl)
       .setName('Document type')
-      .setDesc('This controls where the Obsidian external-file note is filed. It does not force an external folder layout.')
+      .setDesc('This controls where the Obsidian external-file note is filed. It is guessed from the file extension, and you can change it.')
       .addDropdown((dropdown) => {
+        this.documentTypeInput = dropdown;
         for (const type of this.settings.documentTypes) dropdown.addOption(type, type);
         dropdown.setValue(this.values.documentType);
         dropdown.onChange((value) => {
           this.values.documentType = normalizeDocumentType(value, this.settings.documentTypes) as DocumentType;
+          this.documentTypeWasAuto = false;
           this.hideError();
         });
       });
@@ -187,6 +191,11 @@ export class RegisterFileModal extends Modal {
       this.values.title = generated;
       this.titleWasAuto = true;
       this.titleInput?.setValue(generated);
+    }
+
+    if (filePath && this.documentTypeWasAuto) {
+      this.values.documentType = guessDocumentType(filePath, this.settings.documentTypes);
+      this.documentTypeInput?.setValue(this.values.documentType);
     }
     this.hideError();
   }
