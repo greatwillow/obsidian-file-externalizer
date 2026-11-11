@@ -20,6 +20,36 @@ export function deriveDocumentType(remoteFolder: string, remoteRoot: string, doc
   return fallbackDocumentType(documentTypes);
 }
 
+const EXTENSION_GROUPS: Array<{ labels: string[]; extensions: string[] }> = [
+  {
+    labels: ['documents', 'document'],
+    extensions: ['pdf', 'doc', 'docx', 'odt', 'rtf', 'txt', 'md', 'pages', 'xls', 'xlsx', 'ods', 'csv', 'numbers', 'ppt', 'pptx', 'odp', 'key'],
+  },
+  {
+    labels: ['images', 'image'],
+    extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif', 'tif', 'tiff', 'bmp', 'svg'],
+  },
+  {
+    labels: ['media'],
+    extensions: ['mp3', 'wav', 'm4a', 'aac', 'flac', 'ogg', 'mp4', 'mov', 'm4v', 'avi', 'mkv', 'webm'],
+  },
+  {
+    labels: ['archives', 'archive'],
+    extensions: ['zip', 'tar', 'gz', 'tgz', 'bz2', 'xz', '7z', 'rar'],
+  },
+];
+
+/**
+ * Suggests a document type from the file extension, using only the types this vault has configured.
+ * Falls back to the catch-all type when the extension is unknown or its group is not configured.
+ */
+export function guessDocumentType(filePath: string, documentTypes: string[]): DocumentType {
+  const extension = String(filePath || '').split(/[\\/]/).pop()?.match(/\.([^.]+)$/)?.[1]?.toLowerCase() || '';
+  const group = EXTENSION_GROUPS.find((candidate) => candidate.extensions.includes(extension));
+  const match = group && documentTypes.find((type) => group.labels.includes(normalizedLabel(type)));
+  return match || fallbackDocumentType(documentTypes);
+}
+
 function normalizedLabel(value: string): string {
   return String(value || '').trim().toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ');
 }

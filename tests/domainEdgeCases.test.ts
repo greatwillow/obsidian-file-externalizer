@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deriveDocumentType, normalizeDocumentType } from '../src/domain/documentType';
+import { deriveDocumentType, guessDocumentType, normalizeDocumentType } from '../src/domain/documentType';
 import {
   buildExternalFileNote,
   externalFileNoteFolder,
@@ -243,4 +243,29 @@ test('normalizeSettings tolerates empty or malformed saved data', () => {
 
 test('normalizeSettings does not add a second Other when one exists in another case', () => {
   assert.deepEqual(normalizeSettings({ documentTypes: ['Reference', 'other'] }).documentTypes, ['Reference', 'other']);
+});
+
+// document type guessing
+
+const defaultTypes = [...DEFAULT_SETTINGS.documentTypes];
+
+test('guessDocumentType picks the configured type for common extensions', () => {
+  assert.equal(guessDocumentType('/Users/me/Downloads/Contract.PDF', defaultTypes), 'Documents');
+  assert.equal(guessDocumentType('C:\\Users\\me\\Pictures\\photo.heic', defaultTypes), 'Images');
+  assert.equal(guessDocumentType('/tmp/call recording.m4a', defaultTypes), 'Media');
+  assert.equal(guessDocumentType('/tmp/backup.tar.gz', defaultTypes), 'Archives');
+});
+
+test('guessDocumentType falls back to the catch-all type', () => {
+  assert.equal(guessDocumentType('/tmp/model.blend', defaultTypes), 'Other');
+  assert.equal(guessDocumentType('/tmp/README', defaultTypes), 'Other');
+  assert.equal(guessDocumentType('/tmp/archive.d/notes', defaultTypes), 'Other');
+  assert.equal(guessDocumentType('', defaultTypes), 'Other');
+});
+
+test('guessDocumentType only returns types the vault has configured', () => {
+  const custom = ['Contracts', 'Image', 'Other'];
+  assert.equal(guessDocumentType('/tmp/scan.png', custom), 'Image');
+  assert.equal(guessDocumentType('/tmp/contract.pdf', custom), 'Other');
+  assert.equal(guessDocumentType('/tmp/contract.pdf', ['Contracts']), 'Contracts');
 });

@@ -72,6 +72,8 @@ npm run install:release -- /path/to/your-vault 0.2.0    # a specific version
 
 The plugin ships with generic defaults. Each vault configures its own storage root, cache folder, external-note folder, and document types in `.obsidian/plugins/file-externalizer/data.json` or through the plugin settings UI.
 
+When you choose a file to register, the plugin guesses its document type from the extension (`.pdf` is Documents, `.png` is Images, `.mp4` is Media, `.zip` is Archives). It only picks a type the vault has configured, otherwise it picks Other, and you can always change it.
+
 ## Commands
 
 - `File Externalizer: Register File`
